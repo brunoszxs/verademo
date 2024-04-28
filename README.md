@@ -1,4 +1,4 @@
-# VeraDemo - Blab-a-Gag (brunoabreusz)
+# VeraDemo - Blab-a-Gag
 
 ### :information_source: Notice
 
