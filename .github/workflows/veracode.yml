@@ -3,7 +3,9 @@ name: Veracode Security Scan
 on: 
   pull_request:
     branches:
-      - main
+      - master
+  schedule:
+    - cron: 0 4 * * *
   workflow_dispatch:
 
 jobs:
@@ -13,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run Veracode SCA
         env:
           SRCCLR_API_TOKEN: ${{ secrets.SRCCLR_API_TOKEN }}
@@ -33,7 +35,7 @@ jobs:
       - name: Run Veracode Policy scan
         uses: veracode/veracode-uploadandscan-action@0.2.6
         with:
-          appname: 'GitHub SCA Action'
+          appname: 'GitHub Pipeline Scan to Sarif Action'
           createprofile: false
           filepath: 'app.zip'
           scantimeout: 30
