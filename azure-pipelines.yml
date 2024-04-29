@@ -1,28 +1,29 @@
-
 trigger:
 - master
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: windows-latest
 
 variables:
-  veracodeAppProfile: '$(APP_PROFILE)' # This assumes APP_PROFILE is a variable defined in the pipeline settings
+  SRCCLR_API_TOKEN: $(SCAToken)
+  listURLsPath: URL-List.txt
 
-stages:
-- stage: Build
-  displayName: 'Build and Scan'
-  jobs:
-  - job: BuildJob
-    steps:
-    - script: echo Building the project...
+steps:
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      # Download SCA
+      Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://download.srcclr.com/ci.ps1'))
 
-    - task: Veracode@3
-      inputs:
-        ConnectionDetailsSelection: 'Credentials'
-        apiId: '389348b563b0eec8bb02992541e6847c'
-        apiKey: 'f0c49aba9d5a422605b3023defeb08247d0afa95cf27384d9a46328ba9bdcf2f68f18264776cf16c0656a4dd65fe963628d6d9ff235c8cc5dab51b6d562dbb33'
-        veracodeAppProfile: '$(system.teamProject)'
-        version: '$(build.buildNumber)'
-        filepath: '$(build.artifactstagingdirectory)'
-        importResults: true
-        maximumWaitTime: '360'
+      $listURLs = Get-Content -Path "$(listURLsPath)"
+      foreach ($URL in $listURLs) {
+          try {
+              srcclr scan --url $URL
+          }
+          catch {
+              $ErrorMessage = $_.Exception.Message
+              Write-Host "$ErrorMessage"
+          }
+      }
+  displayName: 'Veracode SCA'
