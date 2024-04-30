@@ -2,28 +2,45 @@ trigger:
 - main
 
 pool:
-  vmImage: windows-latest
+  vmImage: 'ubuntu-latest'
 
 variables:
-  SRCCLR_API_TOKEN: $(SCAToken)
-  listURLsPath: URL-List.txt
+  VERACODE_API_KEY_ID: $(VeracodeApiId)
+  VERACODE_API_KEY_SECRET: $(VeracodeApiKey)
 
 steps:
-- task: PowerShell@2
+- task: Maven@3
   inputs:
-    targetType: 'inline'
-    script: |
-      # Download SCA
-      Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://download.srcclr.com/ci.ps1'))
+    mavenPomFile: 'pom.xml'
+    goals: 'clean package'
+    publishJUnitResults: true
+    testResultsFiles: '**/surefire-reports/TEST-*.xml'
+    codeCoverageToolOption: 'JaCoCo'
+    options: '-DskipTests=true -Dmaven.javadoc.skip=true'
 
-      $listURLs = Get-Content -Path "$(listURLsPath)"
-      foreach ($URL in $listURLs) {
-          try {
-              srcclr scan --url $URL
-          }
-          catch {
-              $ErrorMessage = $_.Exception.Message
-              Write-Host "$ErrorMessage"
-          }
-      }
-  displayName: 'Veracode SCA'
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '$(System.DefaultWorkingDirectory)/target'
+    Contents: '**/*.jar'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/jars'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/jars'
+    ArtifactName: 'jars'
+    publishLocation: 'Container'
+
+- task: Veracode@3
+  inputs:
+    ConnectionDetailsSelection: 'Service Connection'
+    AnalysisService: 'VeracodeServiceConnection'
+    veracodeAppProfile: 'YourAppName'
+    version: '$(Build.BuildNumber)'
+    filepath: '$(Build.ArtifactStagingDirectory)/jars'
+    optargs: '-criticality high -createsandbox true -sandboxname mysandbox'
+    createSandBox: true
+    createProfile: true
+    failBuildIfUploadAndScanBuildStepFails: true
+    importResults: true
+    failBuildOnPolicyFail: true
+    maximumWaitTime: '360'
