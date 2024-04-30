@@ -30,17 +30,16 @@ steps:
     ArtifactName: 'jars'
     publishLocation: 'Container'
 
-- task: Veracode@3
+- task: Veracode Flaw Importer@3
   inputs:
     ConnectionDetailsSelection: 'Service Connection'
-    AnalysisService: 'VeracodeServiceConnection'
-    veracodeAppProfile: 'YourAppName'
-    version: '$(Build.BuildNumber)'
-    filepath: '$(Build.ArtifactStagingDirectory)/jars'
-    optargs: '-criticality high -createsandbox true -sandboxname mysandbox'
-    createSandBox: true
-    createProfile: true
-    failBuildIfUploadAndScanBuildStepFails: true
-    importResults: true
-    failBuildOnPolicyFail: true
-    maximumWaitTime: '360'
+    veracodeAppProfile: '$(system.teamProject)'
+    sandboxName: 
+    scanType: 'SCA'
+    importType: 'All Unmitigated Flaws Violating Policy'
+    workItemType: 'Bug'
+    area: '$(system.teamProject)'
+    overwriteAreaPathInWorkItemsOnImport: true
+    iterationPath: '$(system.teamProject)'
+    overwriteIterationPath: true
+    flawImportLimit: '1000'
